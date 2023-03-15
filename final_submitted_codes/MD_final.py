@@ -47,21 +47,18 @@ def tokenization_for_BERT(df, path="/media2/special/Sadat/MD_v2/Data/", filename
 
 
 
-# Create the BertClassfier class
-class BertClassifier(nn.Module):
-    """Bert Model for Classification Tasks.
+# Create the Bertregressor class
+class Bertregressor(nn.Module):
+    """Bert Model for Regression Tasks.
     """
     def __init__(self, hidden_size=50, dropout=0): 
-        #The freeze_bert is set to false to make sure our model DOES do some fine tuning
-        #on the BERT layers
-        super(BertClassifier, self).__init__()
-        # Specify hidden size of BERT, hidden size of our classifier, and number of labels
-        D_in, H, D_out = 768, hidden_size, 1 #Just one hidden layer with 50 units in it
-        # Instantiate BERT model
+
+        super(Bertregressor, self).__init__()
+        # Specify hidden size of BERT, hidden size of our regressor, and number of labels
+        D_in, H, D_out = 768, hidden_size, 1 
         self.bert = BertModel.from_pretrained('bert-base-uncased')
 
-        # We'd like to build a fully connected neural network for classification task. We choose to keep the droput to 
-        #zero for now. Later on, we will see if the dropouts can be adjusted to avoid overfitting. 
+        # We'd like to build a fully connected neural network 
 
         self.fc1 = nn.Linear(D_in, H)
         self.fc2 = nn.Linear(H, D_out)
@@ -69,27 +66,18 @@ class BertClassifier(nn.Module):
         self.relu = nn.ReLU()
         
     def forward(self, input_ids, attention_mask):
-        '''
-        This function takes input as the training set and attention mask and 
-        gives the output as porbability values.
-        Inputs-->
-        input_ids: the training set tensor. MUST be of size [batch_size, tokenization_length]
-        attention_mask: The 1/0 indication of input_ids. MUST be of size [batch_size, tokenization_length]
-        output-->
-        logits: Output values of shape [batch_size, number_of_labels]. Now keep it in mind, this is NOT
-        softmax, it is only logits.
-        '''
+
         # Feed input to BERT
         bert_cls_outputs = self.bert(input_ids=input_ids,
                             attention_mask=attention_mask)[0][:, 0, :]
         
 
-        # Feed input to classifier to compute logits
+        # Feed input to regressor to compute PREDICTION
         out1 = self.fc1(bert_cls_outputs)
         out1 = self.relu(out1)
         out1 = self.dropout(out1)
-        logits = self.fc2(out1)
-        return logits
+        PREDICTION = self.fc2(out1)
+        return PREDICTION
 
 def prepare_train_and_valid(df, mode="Train"):
 
@@ -107,15 +95,15 @@ def prepare_train_and_valid(df, mode="Train"):
 
 
 def initialize_model(epochs, train_dataloader, device, H, D_in=768, dropout=0.25, classes=2):
-    """Initialize the Bert Classifier, the optimizer and the learning rate scheduler.
+    """Initialize the Bert, the optimizer and the learning rate scheduler.
     """
-    # Instantiate Bert Classifier
-    bert_classifier = BertClassifier(hidden_size=H, dropout=dropout)
+    # Instantiate Bert regressor
+    bert_regressor = Bertregressor(hidden_size=H, dropout=dropout)
     # Tell PyTorch to run the model on GPU
-    bert_classifier.to(device)
+    bert_regressor.to(device)
 
     # Create the optimizer
-    optimizer = AdamW(bert_classifier.parameters(),
+    optimizer = AdamW(bert_regressor.parameters(),
                       lr=args.lr,    # Default learning rate
                       eps=1e-8,    # Default epsilon value
                       weight_decay=args.weight_decay
@@ -128,14 +116,12 @@ def initialize_model(epochs, train_dataloader, device, H, D_in=768, dropout=0.25
     scheduler = get_linear_schedule_with_warmup(optimizer,
                                                 num_warmup_steps=0, # Default value
                                                 num_training_steps=total_steps)
-    return bert_classifier, optimizer, scheduler
+    return bert_regressor, optimizer, scheduler
 
 def create_dataloader(features, labels, attention_masks, soft, batch_size, mode="Train"):
     # Create the DataLoader for our training set
     '''
-    This function will create a dataloader for our training set. The dataloader will help to feed the randomly 
-    sampled data on each batch. The batch size is selected to be 16, is simply as instructed in the original
-    paper. 
+    This function will create a dataloader for our training set.
     '''
     data = TensorDataset(features, attention_masks, labels, soft)
     if mode=="Train":
@@ -155,8 +141,7 @@ def set_seed(seed_value=42):
 
 
 def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, device, optimizer, scheduler):
-    """Train the BertClassifier model.
-    """
+
     loss_fn = nn.MSELoss()
     # Start training loop
     print("Start training...\n")
@@ -192,11 +177,11 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
             # Zero out any previously calculated gradients
             model.zero_grad()
 
-            # Perform a forward pass. This will return logits.
-            logits = model(b_input_ids, b_attn_mask)
+            # Perform a forward pass. This will return PREDICTION.
+            PREDICTION = model(b_input_ids, b_attn_mask)
 
             # Compute loss and accumulate the loss values
-            loss = loss_fn(logits.view(logits.shape[0],), soft.type(torch.float))
+            loss = loss_fn(PREDICTION.view(PREDICTION.shape[0],), soft.type(torch.float))
             batch_loss += loss.item()
             total_loss += loss.item()
 
@@ -259,7 +244,7 @@ def cross_entropy(targets, predictions, epsilon = 1e-12):
     return ce
 
 def evaluate(model, dataloader, device):
-    """Perform a forward pass on the trained BERT model to predict probabilities
+    """Perform a forward pass on the trained BERT model to predict Soft labels
     on the test set.
     """
     # Put the model into the evaluation mode. The dropout layers are disabled during
@@ -272,24 +257,24 @@ def evaluate(model, dataloader, device):
 
     # For each batch in our test set...
     total_loss = 0
-    all_logits = []
+    all_PREDICTION = []
     all_soft = []
     for batch in (dataloader):
         # Load batch to GPU
         b_input_ids, b_attn_mask, _, _ = tuple(t.to(device) for t in batch)
-        # Compute logits
+        # Compute PREDICTION
         with torch.no_grad():
-            logits = model(b_input_ids, b_attn_mask)
+            PREDICTION = model(b_input_ids, b_attn_mask)
 
             
-        all_logits.append(logits)
+        all_PREDICTION.append(PREDICTION)
     
-    # Concatenate logits from each batch
-    all_logits = torch.cat(all_logits, dim=0)
+    # Concatenate PREDICTION from each batch
+    all_PREDICTION = torch.cat(all_PREDICTION, dim=0)
 
     # Apply softmax to calculate probabilities
-    #probs = F.softmax(all_logits, dim=1).cpu().numpy() 
-    P = list(all_logits.cpu().numpy().reshape(all_logits.shape[0],))
+    #probs = F.softmax(all_PREDICTION, dim=1).cpu().numpy() 
+    P = list(all_PREDICTION.cpu().numpy().reshape(all_PREDICTION.shape[0],))
     P_disc = [0 if t<.5 else 1 for t in P]
 
     ## For saving
@@ -395,11 +380,11 @@ with open(args.log_dir+ "/" + str(args.ver) + "_BERT_MSEloss.txt", 'a') as r:
     r.write(rs1 + rs2)
     r.write("\n")
 
-bert_classifier, optimizer, scheduler = initialize_model(epochs=args.epochs, train_dataloader=train_dataloader, \
+bert_regressor, optimizer, scheduler = initialize_model(epochs=args.epochs, train_dataloader=train_dataloader, \
 device=args.device, H=args.hidden_size,  D_in=768, dropout=args.dropout, classes=1)
 print(test.shape)
 
-df = train_model(bert_classifier, train_dataloader, valid_dataloader, epochs=args.epochs, evaluation=True, device=args.device,
+df = train_model(bert_regressor, train_dataloader, valid_dataloader, epochs=args.epochs, evaluation=True, device=args.device,
         optimizer=optimizer, scheduler=scheduler)
 
 print(df)
