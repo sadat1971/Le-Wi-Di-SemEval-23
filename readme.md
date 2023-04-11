@@ -13,6 +13,6 @@ We further made some experiments. The codes can be found in the *all_code_dumped
 
 1. For Brexit disagreement learning (dis-learning):
 
-without metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_dis_learning.py --use_metadata no```
+without metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata no```
 
-with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_dis_learning.py --use_metadata yes```
+with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata yes```
