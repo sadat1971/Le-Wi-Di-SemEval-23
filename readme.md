@@ -16,3 +16,19 @@ We further made some experiments. The codes can be found in the *all_code_dumped
 without metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata no```
 
 with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata yes```
+
+
+
+
+
+**Reference**
+
+I got the help on coding from a huge number of papers, repos, blogs, tutorials and many other online resources. If you think, I missed some references, please let me know. 
+
+1. https://www.tensorflow.org/text/tutorials/classify_text_with_bert
+
+2. https://github.com/philschmid/deep-learning-pytorch-huggingface
+
+3. https://github.com/xuyige/BERT4doc-Classification
+
+4. https://github.com/abyanjan/Fine-Tune-BERT-for-Text-Classification
