@@ -29,7 +29,36 @@ train.to_pickle(path + "Brexit_v2/Data/Brexit_train.pkl")
 dev.to_pickle(path + "Brexit_v2/Data/Brexit_dev.pkl")
 test.to_pickle(path + "Brexit_v2/Data/Brexit_test.pkl")
 
+## Extract Aggressiveness and Offensiveness information
 
+def find_aggression(x):
+    agg = [int(i) for i in x['other annotations']["aggressive language detection"].split(',')]
+    return agg
+def find_offense(x):
+    
+    try:
+        off = ([int(i) for i in x['other annotations']['offensive language detection'].split(',')])
+    except:
+        labels = x['other annotations']['offensive language detection'].split(',')
+        for L in range(len(labels)):
+            if labels[L]=='0' or labels[L]=='No':
+                labels[L]=0
+            elif labels[L]=='1' or labels[L]=='yes':
+                labels[L]=1
+        off = ([int(i) for i in labels])
+    return off
+
+train["Aggressive"] = train.other_info.apply(lambda x:find_aggression(x))
+train["Offensive"] = train.other_info.apply(lambda x:find_offense(x))
+train["annotations"] = train["annotations"].apply(lambda x:[int(i) for i in x.split(',')])
+dev["Aggressive"] = dev.other_info.apply(lambda x:find_aggression(x))
+dev["Offensive"] = dev.other_info.apply(lambda x:find_offense(x))
+dev["annotations"] = dev["annotations"].apply(lambda x:[int(i) for i in x.split(',')])
+test["Aggressive"] = test.other_info.apply(lambda x:find_aggression(x))
+test["Offensive"] = test.other_info.apply(lambda x:find_offense(x))
+test["annotations"] = test["annotations"].apply(lambda x:[int(i) for i in x.split(',')])
+
+# tokenization for BERT
 def tokenization_for_BERT(df, path="/path/to/pickle/files/", filename="put_the_filename_here", saveit="No"):
 
     if "tokenized" not in df.columns:
