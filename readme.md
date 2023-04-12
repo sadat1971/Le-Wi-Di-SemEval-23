@@ -17,7 +17,11 @@ without metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_d
 
 with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata yes```
 
+2. For Brexit post-aggregation learning (dis-learning):
 
+without metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_post_agg.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata no```
+
+with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_post_agg.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata yes```
 
 
 
