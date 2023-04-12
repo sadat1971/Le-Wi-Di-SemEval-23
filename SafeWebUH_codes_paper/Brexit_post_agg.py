@@ -550,7 +550,7 @@ if args.use_metadata=="yes":
     print("(metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(wt, f1m, f1b, prob_wise,pred_wise))
 
 else:
-pred_wise, prob_wise, f1m, f1b = compute_aggregated_performance(preds, probs, soft_lab, test.hard_label.tolist())
-print("(No metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(wt, f1m, f1b, prob_wise,pred_wise))
+    pred_wise, prob_wise, f1m, f1b = compute_aggregated_performance(preds, probs, soft_lab, test.hard_label.tolist())
+    print("(No metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(wt, f1m, f1b, prob_wise,pred_wise))
 
 
