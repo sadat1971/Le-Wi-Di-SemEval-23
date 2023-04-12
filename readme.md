@@ -10,6 +10,7 @@ We further made some experiments. The codes can be found in the *all_code_dumped
 
 ** Please modify the paths for data
 
+** Please note, there is post-aggregation learning for HS-Brexit only, since the annotators are inconsistent across other datasets. 
 
 1. For Brexit disagreement learning (dis-learning):
 
@@ -23,6 +24,11 @@ without metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_p
 
 with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Brexit_post_agg.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5 --use_metadata yes```
 
+3. For ConvAbuse  disagreement learning (dis-learning):  
+
+without metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/ConvAbuse_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 7 --hidden_size 32 --lr 5e-5 --use_metadata no```
+
+with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/ConvAbuse_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 7 --hidden_size 32 --lr 5e-5 --use_metadata yes```
 
 
 **Reference**
