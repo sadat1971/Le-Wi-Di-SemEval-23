@@ -1,5 +1,3 @@
-
-
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -16,9 +14,6 @@ from transformers import BertTokenizer
 from tqdm import tqdm
 import torch.nn.functional as F
 from sklearn.model_selection import train_test_split
-
-
-
 
 
 
@@ -63,18 +58,6 @@ def tokenization_for_BERT(df, path="/path/to/data/Convabuse/Data/", filename="pu
 
 
     return df
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class BertClassifier(nn.Module):
@@ -365,10 +348,6 @@ def evaluate(model, dataloader, device):
 
 
     return ce, f1*100, avg_loss, df
-
-
-
-
 
 
 set_seed(42)
