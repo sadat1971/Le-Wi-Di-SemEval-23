@@ -358,6 +358,7 @@ parser.add_argument("--epochs", type=int, default=4, help="what is the epoch siz
 parser.add_argument("--hidden_size", type=int, default=32, help="what is the hidden layer size?")
 parser.add_argument("--sample", type=str, default="none", help="what kind of sampling you want? Over, Under or none")
 parser.add_argument("--model_and_pediction_save", type=str, default="No", help="Do you want to save the model and the results as well?")
+parser.add_argument("--use_metadata", type=str, default="yes", help="Do you want to use metadata?")
 
 
 args = parser.parse_args()
@@ -542,11 +543,13 @@ for i in range(1,7):
     ann_name = "ANN_" + str(i)
     df2[ann_name] = probs_otherinfo[i-1]
 df2.to_pickle(args.log_dir + "ann_res/meta_added.pkl")
+
 #####
-pred_wise, prob_wise, f1m, f1b = compute_aggregated_performance(preds_otherinfo, probs_otherinfo, soft_lab, test.hard_label.tolist())
-print("(metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(wt, f1m, f1b, prob_wise,pred_wise))
+if args.use_metadata=="yes":
+    pred_wise, prob_wise, f1m, f1b = compute_aggregated_performance(preds_otherinfo, probs_otherinfo, soft_lab, test.hard_label.tolist())
+    print("(metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(wt, f1m, f1b, prob_wise,pred_wise))
 
-
+else:
 pred_wise, prob_wise, f1m, f1b = compute_aggregated_performance(preds, probs, soft_lab, test.hard_label.tolist())
 print("(No metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(wt, f1m, f1b, prob_wise,pred_wise))
 
