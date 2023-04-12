@@ -10,7 +10,7 @@ We further made some experiments. The codes can be found in the *all_code_dumped
 
 ** Please modify the paths for data
 
-** Please note, there is post-aggregation learning for HS-Brexit only, since the annotators are inconsistent across other datasets. 
+** Please note, there is post-aggregation learning for HS-Brexit, and ArMIS only, since the annotators are inconsistent across other two datasets. 
 
 1. For Brexit disagreement learning (dis-learning):
 
