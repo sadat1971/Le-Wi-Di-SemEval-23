@@ -103,9 +103,6 @@ class BertClassifier(nn.Module):
         bert_cls_outputs = self.bert(input_ids=input_ids,
                             attention_mask=attention_mask)[0][:, 0, :]
        
-
-
-       
         out1 = self.fc1(bert_cls_outputs)
         out1 = self.relu(out1)
         out1 = self.dropout(out1)
@@ -229,30 +226,19 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
 
             if (step % 20 == 0 and step != 0) or (step == len(train_dataloader) - 1):
                
-                time_elapsed = time.time() - t0_batch
-
-
-               
+                time_elapsed = time.time() - t0_batch              
                 print(f"{epoch_i + 1:^7} | {step:^7} | {batch_loss / batch_counts:^12.6f} | {'-':^10} | {'-':^9} | {time_elapsed:^9.2f}")
 
-
-               
                 batch_loss, batch_counts = 0, 0
                 t0_batch = time.time()
-
-
-       
+  
         avg_train_loss = total_loss / len(train_dataloader)
 
 
         print("-"*70)
-       
-       
-       
+    
         if evaluation == True:
-           
-           
-            val_loss, val_accuracy, f1, ce = evaluate(model, val_dataloader, device)
+           val_loss, val_accuracy, f1, ce = evaluate(model, val_dataloader, device)
            
             time_elapsed = time.time() - t0_epoch
            
@@ -263,10 +249,6 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
         val_loss, val_accuracy, val_f1sc, df = evaluate(model, val_dataloader, device)
         df.to_pickle(args.log_dir + "/temp/annotator_" + str(ANN)  + ".pkl")
            
-
-
-
-
         train_loss.append(avg_train_loss)
         valid_loss.append(val_loss)
         val_acc.append(val_accuracy)
@@ -290,9 +272,6 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
     loss_record["val_acc"] = val_acc
     loss_record["val_f1"] = val_f1
 
-
-
-
     return loss_record
 
 
@@ -307,16 +286,11 @@ def evaluate(model, dataloader, device):
     """Perform a forward pass on the trained BERT model to predict probabilities
     on the test set.
     """
-   
-   
+
     loss_fn = nn.CrossEntropyLoss()
     model.eval()
-
-
     all_probs = []
     all_labels = []
-
-
    
     total_loss = 0
     all_logits = []
@@ -359,23 +333,6 @@ def evaluate(model, dataloader, device):
 
 
 
-
-
-
-def sample_as_instructed(df, instruction="none"):
-  if instruction=="Over":
-    n = RandomOverSampler(random_state=42)
-    dfo = n.fit_resample(df, df["soft_lab"])[0]
-    return dfo
- 
-  elif instruction=="Under":
-    n = RandomUnderSampler(random_state=42)
-    dfu = n.fit_resample(df, df["soft_lab"])[0]
-    return dfu
-  else:
-    return df
-
-
 set_seed(42)
 
 
@@ -397,23 +354,13 @@ parser.add_argument("--model_path_dir",
 parser.add_argument("--batch_size", type=int, default=8, help="what is the batch size?")
 parser.add_argument("--device", type=str, default="cuda:0", help="what is the device?")
 parser.add_argument("--dropout", type=np.float32, default=0.1, help="what is the dropout in FC layer?")
-parser.add_argument("--valid_with", type=str, default="test", help="Validate with test data?")
 parser.add_argument("--epochs", type=int, default=4, help="what is the epoch size?")
 parser.add_argument("--hidden_size", type=int, default=32, help="what is the hidden layer size?")
 parser.add_argument("--sample", type=str, default="none", help="what kind of sampling you want? Over, Under or none")
 parser.add_argument("--model_and_pediction_save", type=str, default="No", help="Do you want to save the model and the results as well?")
-parser.add_argument("--fast_track", type=np.float32, default=1.00, help="Do you want a fast track train ?")
-
-
 
 
 args = parser.parse_args()
-
-
-
-
-
-
 
 
 device = args.device
@@ -432,9 +379,6 @@ train = pd.read_pickle(args.data_dir + "Brexit_train.pkl")
 train = tokenization_for_BERT(train, path=args.data_dir, filename="Brexit_train" , saveit="Yes")
 train["Soft_lab_1"] = train.soft_label.apply(lambda x:x['1'])
 
-
-
-
 dev = pd.read_pickle(args.data_dir + "Brexit_dev.pkl")
 dev = tokenization_for_BERT(dev, path=args.data_dir, filename="Brexit_dev" , saveit="Yes")
 dev["Soft_lab_1"] = dev.soft_label.apply(lambda x:x['1'])
@@ -442,9 +386,6 @@ dev["Soft_lab_1"] = dev.soft_label.apply(lambda x:x['1'])
 
 train = pd.concat([train, dev], axis=0)
 train.reset_index(inplace=True, drop=True)
-
-
-
 
 test = pd.read_pickle(args.data_dir + "Brexit_test.pkl")
 test = tokenization_for_BERT(test, path=args.data_dir, filename="Brexit_test" , saveit="Yes")
@@ -457,21 +398,15 @@ for ANN in range(6):
     test["annot_lab"] = test.annotations.apply(lambda x:x[ANN])
     tok_tr, mask_tr, lab_tr, soft_tr = prepare_train_and_valid(train)
     train_dataloader = create_dataloader(tok_tr, lab_tr, mask_tr, soft_tr, batch_size=args.batch_size)
-
-
     tok_ts, mask_ts, lab_ts, soft_ts = prepare_train_and_valid(test)
     test_dataloader = create_dataloader(tok_ts, lab_ts, mask_ts, soft_ts, batch_size=args.batch_size, mode="test")
     valid_dataloader = test_dataloader
-
 
     #valid_dataloader = create_dataloader(tokenized_valid, labels_valid, attention_masks_valid, batch_size=args.batch_size)
 
 
     weights = [train[train.annot_lab==1].shape[0]/train.shape[0],  train[train.annot_lab==0].shape[0]/train.shape[0]]
     class_weights = torch.FloatTensor(weights).to(device)
-
-
-
 
     with open(args.log_dir+ "/" + "Fortesting_BERT_hard_results.txt", 'a') as r:
         r.write("---- annotator {} model -----".format(ANN))
@@ -480,9 +415,6 @@ for ANN in range(6):
 
     bert_classifier, optimizer, scheduler = initialize_model(epochs=annotator_wise_epochs[ANN], train_dataloader=train_dataloader, \
     device=args.device, H=args.hidden_size,  D_in=768, dropout=args.dropout, classes=2)
-
-
-
 
     df = train_model(bert_classifier, train_dataloader, valid_dataloader, epochs=args.epochs, evaluation=True, device=args.device,
             optimizer=optimizer, scheduler=scheduler, class_weights=class_weights)
@@ -571,8 +503,6 @@ def compute_new_probs(of, ag, smax_prob, ann_num, wt):
     return [(i+ wt*j)/(2) for i, j in zip(smax_prob, otherinfo_prob)]
 
 
-
-
 wt=2
 probs_pred = pd.DataFrame()
 test =pd.read_pickle(args.data_dir + "Brexit_test.pkl")
@@ -605,8 +535,6 @@ for A in probs_otherinfo:
 df_spcl = pd.DataFrame()
 df_spcl["spcl"] = probs_otherinfo
 df_spcl.to_pickle(args.log_dir + "ann_res/df_spcl.pkl")
-
-
 
 
 df2=pd.DataFrame()
