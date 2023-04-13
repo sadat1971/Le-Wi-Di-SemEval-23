@@ -1,5 +1,6 @@
 
-#training the holistic model
+
+ 
 from tqdm import tqdm
 import torch
 import torch.nn as nn
@@ -25,20 +26,26 @@ from imblearn.under_sampling import RandomUnderSampler
 from transformers import AutoTokenizer, AutoModel
 
 
+
+
 start = time.time()
 
-def tokenization_for_BERT(df, path="/media2/sadat/Sadat/SemEval23_Le_Wi_Di/Armis/Data/", filename="put_the_filename_here", saveit="No"):
+
+def tokenization_for_BERT(df, path="/path/to/data/Armis/Data/", filename="put_the_filename_here", saveit="No"):
+
 
     if "tokenized" not in df.columns:
         tokenizer = AutoTokenizer.from_pretrained("asafaya/bert-large-arabic", do_lower_case=True)
-        df["tokenized"] = df["text"].apply(lambda sent:tokenizer.encode(sent, add_special_tokens=True, 
+        df["tokenized"] = df["text"].apply(lambda sent:tokenizer.encode(sent, add_special_tokens=True,
                                                                                 max_length=512, truncation=True,
-                                                                                padding='max_length', 
+                                                                                padding='max_length',
                                                                                 return_attention_mask=False))
+
 
         if saveit!="No":
             df.to_pickle(path + filename + ".pkl")
-        
+       
+
 
     return df
 
@@ -48,30 +55,39 @@ def tokenization_for_BERT(df, path="/media2/sadat/Sadat/SemEval23_Le_Wi_Di/Armis
 
 
 
-# Create the BertClassfier class
+
+
+
+
+
+
+
+ 
 class BertClassifier(nn.Module):
     """Bert Model for Classification Tasks.
     """
-    def __init__(self, hidden_size=50, dropout=0): 
-        #The freeze_bert is set to false to make sure our model DOES do some fine tuning
-        #on the BERT layers
+    def __init__(self, hidden_size=50, dropout=0):
+         _bert is set to false to make sure our model DOES do some fine tuning
+         
         super(BertClassifier, self).__init__()
-        # Specify hidden size of BERT, hidden size of our classifier, and number of labels
-        D_in, H, D_out = 1024, hidden_size, 2 #Just one hidden layer with 50 units in it
-        # Instantiate BERT model
+         
+        D_in, H, D_out = 1024, hidden_size, 2  
+         
         self.bert = AutoModel.from_pretrained("asafaya/bert-large-arabic")
 
-        # We'd like to build a fully connected neural network for classification task. We choose to keep the droput to 
-        #zero for now. Later on, we will see if the dropouts can be adjusted to avoid overfitting. 
+
+         
+         
+
 
         self.fc1 = nn.Linear(D_in, H)
         self.fc2 = nn.Linear(H, D_out)
         self.dropout = nn.Dropout(p=dropout)
         self.relu = nn.ReLU()
-        
+       
     def forward(self, input_ids, attention_mask):
         '''
-        This function takes input as the training set and attention mask and 
+        This function takes input as the training set and attention mask and
         gives the output as porbability values.
         Inputs-->
         input_ids: the training set tensor. MUST be of size [batch_size, tokenization_length]
@@ -80,59 +96,63 @@ class BertClassifier(nn.Module):
         logits: Output values of shape [batch_size, number_of_labels]. Now keep it in mind, this is NOT
         softmax, it is only logits.
         '''
-        # Feed input to BERT
+         
         bert_cls_outputs = self.bert(input_ids=input_ids,
                             attention_mask=attention_mask)[0][:, 0, :]
-        
+       
 
-        # Feed input to classifier to compute logits
+
+         
         out1 = self.fc1(bert_cls_outputs)
         out1 = self.relu(out1)
         out1 = self.dropout(out1)
         logits = self.fc2(out1)
         return logits
 
+
 def prepare_train_and_valid(df):
+
 
     tokenized = np.array(list(df["tokenized"]))
     attention_masks = np.where(tokenized>0, 1, 0)
-    ## labels
+     
     labels = np.array(list(df["annot_lab"]))
     soft = np.array(list(df["Soft_lab_1"]))
     tokenized, attention_masks, labels, soft = torch.tensor(tokenized), torch.tensor(attention_masks), torch.tensor(labels), torch.tensor(soft)
     return tokenized, attention_masks, labels, soft
 
 
+
+
 def initialize_model(epochs, train_dataloader, device, H, D_in=1024, dropout=0.25, classes=2):
-    """Initialize the Bert Classifier, the optimizer and the learning rate scheduler.
-    """
-    # Instantiate Bert Classifier
+
+
+     
     bert_classifier = BertClassifier(hidden_size=H, dropout=dropout)
-    # Tell PyTorch to run the model on GPU
+     
     bert_classifier.to(device)
 
-    # Create the optimizer
+
+     
     optimizer = AdamW(bert_classifier.parameters(),
-                      lr=5e-5,    # Default learning rate
-                      eps=1e-8    # Default epsilon value
+                      lr=5e-5,    
+                      eps=1e-8    
                       )
 
-    # Total number of training steps
+
+     
     total_steps = len(train_dataloader) * epochs
 
-    # Set up the learning rate scheduler
+
+     
     scheduler = get_linear_schedule_with_warmup(optimizer,
-                                                num_warmup_steps=0, # Default value
+                                                num_warmup_steps=0,  
                                                 num_training_steps=total_steps)
     return bert_classifier, optimizer, scheduler
 
+
 def create_dataloader(features, labels, attention_masks, soft, batch_size, mode="Train"):
-    # Create the DataLoader for our training set
-    '''
-    This function will create a dataloader for our training set. The dataloader will help to feed the randomly 
-    sampled data on each batch. The batch size is selected to be 16, is simply as instructed in the original
-    paper. 
-    '''
+     
     data = TensorDataset(features, attention_masks, labels, soft)
     if mode=="Train":
         sampler = RandomSampler(data)
@@ -140,6 +160,7 @@ def create_dataloader(features, labels, attention_masks, soft, batch_size, mode=
         sampler = SequentialSampler(data)
     dataloader = DataLoader(data, sampler=sampler, batch_size=batch_size)
     return dataloader
+
 
 def set_seed(seed_value=42):
     """Set seed for reproducibility.
@@ -150,11 +171,13 @@ def set_seed(seed_value=42):
     torch.cuda.manual_seed_all(seed_value)
 
 
+
+
 def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, device, optimizer, scheduler, class_weights):
-    """Train the BertClassifier model.
-    """
+
+
     loss_fn = nn.CrossEntropyLoss(weight=class_weights)
-    # Start training loop
+     
     print("Start training...\n")
     loss_record = pd.DataFrame()
     train_loss = []
@@ -163,80 +186,96 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
     val_f1 = []
     best_loss = np.inf
     for epoch_i in range(epochs):
-        # =======================================
-        #               Training
-        # =======================================
-        # Print the header of the result table
+         
+         
+         
+         
         print(f"{'Epoch':^7} | {'Batch':^7} | {'Train Loss':^12} | {'Val Loss':^10} | {'Val Acc':^9} | {'Elapsed':^9}")
         print("-"*70)
 
-        # Measure the elapsed time of each epoch
+
+         
         t0_epoch, t0_batch = time.time(), time.time()
 
-        # Reset tracking variables at the beginning of each epoch
+
+         
         total_loss, batch_loss, batch_counts = 0, 0, 0
 
-        # Put the model into the training mode
+
+         
         model.train()
 
-        # For each batch of training data...
+
+         
         for step, batch in enumerate((train_dataloader)):
             batch_counts +=1
-            # Load batch to GPU
+             
             b_input_ids, b_attn_mask, b_labels, soft = tuple(t.to(device) for t in batch)
 
-            # Zero out any previously calculated gradients
+
+             
             model.zero_grad()
 
-            # Perform a forward pass. This will return logits.
+
+             
             logits = model(b_input_ids, b_attn_mask)
 
-            # Compute loss and accumulate the loss values
+
+             
             loss = loss_fn(logits, b_labels)
             batch_loss += loss.item()
             total_loss += loss.item()
 
-            # Perform a backward pass to calculate gradients
+
+             
             loss.backward()
 
-            # Clip the norm of the gradients to 1.0 to prevent "exploding gradients"
+
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
 
-            # Update parameters and the learning rate
+
+             
             optimizer.step()
             scheduler.step()
 
-            # Print the loss values and time elapsed for every 20 batches
+
+             
             if (step % 20 == 0 and step != 0) or (step == len(train_dataloader) - 1):
-                # Calculate time elapsed for 20 batches
+                 
                 time_elapsed = time.time() - t0_batch
 
-                # Print training results
+
+                 
                 print(f"{epoch_i + 1:^7} | {step:^7} | {batch_loss / batch_counts:^12.6f} | {'-':^10} | {'-':^9} | {time_elapsed:^9.2f}")
 
-                # Reset batch tracking variables
+
+                 
                 batch_loss, batch_counts = 0, 0
                 t0_batch = time.time()
 
-        # Calculate the average loss over the entire training data
+
+         
         avg_train_loss = total_loss / len(train_dataloader)
 
+
         print("-"*70)
-        # =======================================
-        #               Evaluation
-        # =======================================
+         
+         
+         
         if evaluation == True:
-            # After the completion of each training epoch, measure the model's performance
-            # on our validation set.
+             
+             
             val_loss, val_accuracy, f1, ce = evaluate(model, val_dataloader, device)
-            # Print performance over the entire training data
+             
             time_elapsed = time.time() - t0_epoch
-            
+           
             print(f"{epoch_i + 1:^7} | {'-':^7} | {avg_train_loss:^12.6f} | {val_loss:^10.6f} | {val_accuracy:^9.2f} | {time_elapsed:^9.2f}")
             print("-"*70)
 
+
         val_loss, val_accuracy, val_f1sc, df = evaluate(model, val_dataloader, device)
         df.to_pickle(args.log_dir + "/temp/annotator_" + str(ANN)  + ".pkl")
+
 
         train_loss.append(avg_train_loss)
         valid_loss.append(val_loss)
@@ -244,9 +283,10 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
         val_f1.append(val_f1sc)
         with open(args.log_dir+ "/" + "BERT_hard_results.txt", 'a') as r:
             res = "#epoch: " + str(epoch_i) + "  #train_loss " + str(round(avg_train_loss,4)) +  "  #valid_loss "  + str(round(val_loss ,4)) \
-             +  "  #valid_acc "  + str(round(val_accuracy ,4)) +  "  #valid_f1 "  + str(round(val_f1sc ,4)) 
+             +  "  #valid_acc "  + str(round(val_accuracy ,4)) +  "  #valid_f1 "  + str(round(val_f1sc ,4))
             r.write(res)
             r.write("\n")
+
 
         print("\n")
         if args.model_and_pediction_save!="No":
@@ -254,19 +294,24 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
             path = args.model_path_dir + model_name
             torch.save(model.state_dict(), path)
 
+
     loss_record["train_loss"] = train_loss
     loss_record["valid_loss"] = valid_loss
     loss_record["val_acc"] = val_acc
     loss_record["val_f1"] = val_f1
 
 
+
+
     return loss_record
+
 
 def cross_entropy(targets, predictions, epsilon = 1e-12):                                
     predictions = np.clip(predictions, epsilon, 1. - epsilon)                                      
     N = predictions.shape[0]
     ce = -np.sum(targets*np.log(predictions+1e-9))/N
     return ce
+
 
 def evaluate(model, dataloader, device):
     """Perform a forward pass on the trained BERT model to predict probabilities
@@ -277,8 +322,10 @@ def evaluate(model, dataloader, device):
     loss_fn = nn.CrossEntropyLoss()
     model.eval()
 
+
     all_probs = []
     all_labels = []
+
 
     # For each batch in our test set...
     total_loss = 0
@@ -293,16 +340,18 @@ def evaluate(model, dataloader, device):
             logits = model(b_input_ids, b_attn_mask)
             loss = loss_fn(logits, labels)
             total_loss += loss.item()
-            
+           
         all_logits.append(logits)
         all_soft.append(soft)
-    
+   
     # Concatenate logits from each batch
     all_logits = torch.cat(all_logits, dim=0)
     all_soft = torch.cat(all_soft, dim=0)
 
+
     # Apply softmax to calculate probabilities
-    probs = F.softmax(all_logits, dim=1).cpu().numpy() 
+    probs = F.softmax(all_logits, dim=1).cpu().numpy()
+
 
     df = pd.DataFrame()
     df["GT"] = all_labels
@@ -317,12 +366,15 @@ def evaluate(model, dataloader, device):
 
 
 
+
+
+
 def sample_as_instructed(df, instruction="none"):
   if instruction=="Over":
     n = RandomOverSampler(random_state=42)
     dfo = n.fit_resample(df, df["soft_lab"])[0]
     return dfo
-  
+ 
   elif instruction=="Under":
     n = RandomUnderSampler(random_state=42)
     dfu = n.fit_resample(df, df["soft_lab"])[0]
@@ -330,21 +382,24 @@ def sample_as_instructed(df, instruction="none"):
   else:
     return df
 
+
 set_seed(42)
+
 
 parser = argparse.ArgumentParser(description='BERT model arguments')
 
-parser.add_argument("--data_dir", 
-                    type=str, 
-                    default="/media2/sadat/Sadat/SemEval23_Le_Wi_Di/Armis/Data/",
+
+parser.add_argument("--data_dir",
+                    type=str,
+                    default="/path/to/data/Armis/Data/",
                      help="Input data path.")
 parser.add_argument("--log_dir",
-                     type=str, 
-                     default="/media2/sadat/Sadat/SemEval23_Le_Wi_Di/Armis/Result/SafeWebUH",
+                     type=str,
+                     default="/path/to/data/Armis/Result/SafeWebUH",
                      help="Store result path.")
 parser.add_argument("--model_path_dir",
-                     type=str, 
-                     default="/media2/sadat/Sadat/SemEval23_Le_Wi_Di/Armis/Data/Result/SafeWebUH",
+                     type=str,
+                     default="/path/to/data/Armis/Data/Result/SafeWebUH",
                      help="Store result path.")
 parser.add_argument("--batch_size", type=int, default=8, help="what is the batch size?")
 parser.add_argument("--device", type=str, default="cuda:0", help="what is the device?")
@@ -357,14 +412,20 @@ parser.add_argument("--model_and_pediction_save", type=str, default="No", help="
 parser.add_argument("--fast_track", type=np.float32, default=1.00, help="Do you want a fast track train ?")
 
 
+
+
 args = parser.parse_args()
+
+
+
+
 
 
 
 
 device = args.device
 # first, we'll see if we have CUDA available
-if torch.cuda.is_available():       
+if torch.cuda.is_available():      
     device = torch.device(device)
     print(f'There are {torch.cuda.device_count()} GPU(s) available.')
     print('Device name:', torch.cuda.get_device_name(0))
@@ -372,13 +433,16 @@ else:
     print('No GPU available, using the CPU instead.')
     device = torch.device("cpu")
 
+
 train = pd.read_pickle(args.data_dir + "Armis_train.pkl")
 train = tokenization_for_BERT(train, path=args.data_dir, filename="Armis_train" , saveit="Yes")
 train["Soft_lab_1"] = train.soft_label.apply(lambda x:x['1'])
 
+
 dev = pd.read_pickle(args.data_dir + "Armis_dev.pkl")
 dev = tokenization_for_BERT(dev, path=args.data_dir, filename="Armis_dev" , saveit="Yes")
 dev["Soft_lab_1"] = dev.soft_label.apply(lambda x:x['1'])
+
 
 train = pd.concat([train, dev], axis=0)
 train.reset_index(inplace=True, drop=True)
@@ -388,40 +452,52 @@ test = pd.read_pickle(args.data_dir + "Armis_test.pkl")
 test = tokenization_for_BERT(test, path=args.data_dir, filename="Armis_test" , saveit="Yes")
 test["Soft_lab_1"] = test.soft_label.apply(lambda x:x['1'])
 
+
 annotator_wise_epochs = [3,4,2]
+
 
 for ANN in range(3):
     train["annot_lab"] = train.annotations.apply(lambda x:x[ANN])
     test["annot_lab"] = test.annotations.apply(lambda x:(x[ANN]))
-    #print(train.annot_lab)
+
 
     tok_tr, mask_tr, lab_tr, soft_tr = prepare_train_and_valid(train)
     train_dataloader = create_dataloader(tok_tr, lab_tr, mask_tr, soft_tr, batch_size=args.batch_size)
+
 
     tok_ts, mask_ts, lab_ts, soft_ts = prepare_train_and_valid(test)
     test_dataloader = create_dataloader(tok_ts, lab_ts, mask_ts, soft_ts, batch_size=args.batch_size, mode="test")
     valid_dataloader = test_dataloader
 
-    #valid_dataloader = create_dataloader(tokenized_valid, labels_valid, attention_masks_valid, batch_size=args.batch_size)
+
+
 
     weights = [train[train.annot_lab==1].shape[0]/train.shape[0],  train[train.annot_lab==0].shape[0]/train.shape[0]]
     class_weights = torch.FloatTensor(weights).to(device)
+
+
 
 
     with open(args.log_dir+ "/" + "BERT_hard_results.txt", 'a') as r:
         r.write("---- annotator {} model -----".format(ANN))
         r.write("\n")
 
+
     bert_classifier, optimizer, scheduler = initialize_model(epochs=args.epochs, train_dataloader=train_dataloader, \
     device=args.device, H=args.hidden_size,  D_in=1024, dropout=args.dropout, classes=2)
+
+
 
 
     df = train_model(bert_classifier, train_dataloader, valid_dataloader, epochs=annotator_wise_epochs[ANN], evaluation=True, device=args.device,
             optimizer=optimizer, scheduler=scheduler, class_weights=class_weights)
 
+
     print(df)
 
+
     end = time.time()
+
 
     with open(args.log_dir+ "/" + "BERT_hard_results.txt", 'a') as r:
         timerq = str(end-start)
@@ -430,7 +506,10 @@ for ANN in range(3):
         r.write("\n\n\n")
 
 
+
+
 ### Compute the f1 and ce score:
+
 
 def compute_aggregated_performance(preds, probs, soft_lab, hard_lab):
     all_preds = []
@@ -443,13 +522,15 @@ def compute_aggregated_performance(preds, probs, soft_lab, hard_lab):
             sum_of_probs += probs[ann][t]
         all_probs.append(sum_of_probs/3)
         all_preds.append(sum_of_preds/3)
-    all_aggr_preds = [0 if i<.5 else 1 for i in all_preds] 
+    all_aggr_preds = [0 if i<.5 else 1 for i in all_preds]
     pred_wice_ce = cross_entropy(soft_lab, all_preds)
     prob_wice_ce = cross_entropy(soft_lab, all_probs)
     f1_micro = f1_score(hard_lab, all_aggr_preds, average = "micro")
     f1_bin = f1_score(hard_lab, all_aggr_preds, average = "binary")
     return pred_wice_ce, prob_wice_ce, f1_micro, f1_bin
-    
+   
+
+
 
 
 probs_pred = pd.DataFrame()
@@ -465,21 +546,10 @@ for ann in range(0,3):
     probs_pred["Ann_" +str(ann)+"_preds"] = Ann1.prediction
     probs.append(Ann1.probs_1.tolist())
     preds.append(Ann1.prediction.tolist())
-    #probs_otherinfo.append(Ann1.probs_1.tolist())
-#####
-# preds_otherinfo = []
-# for A in probs_otherinfo:
-#     annot = []
-#     for p in A:
-#         if p>=.5:
-#             annot.append(1)
-#         else:
-#             annot.append(0)
-#     preds_otherinfo.append(annot)
-#####
-# pred_wise, prob_wise, f1m, f1b = compute_aggregated_performance(preds_otherinfo, probs_otherinfo, soft_lab, test.hard_label.tolist())
-# print("(metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(wt, f1m, f1b, prob_wise,pred_wise))
+
 
 pred_wise, prob_wise, f1m, f1b = compute_aggregated_performance(preds, probs, soft_lab, test.hard_label.tolist())
 print(pred_wise, prob_wise, f1m, f1b)
-print("(No metadata) For weight {}, f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(f1m, f1b, prob_wise,pred_wise))
+print("f1 micro is {:.4f}, f1 binary is {:.4f}  the CE loss is softmax score wise is {:.4f} and average prediction wise {:.4f}".format(f1m, f1b, prob_wise,pred_wise))
+
+
