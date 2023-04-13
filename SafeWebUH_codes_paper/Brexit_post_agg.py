@@ -501,7 +501,7 @@ def compute_new_probs(of, ag, smax_prob, ann_num, wt):
     for o, a in zip(of, ag):
         otherinfo_prob.append(otherinfo[ann_num][str(o)+str(a)])
    
-    return [(i+ wt*j)/(2) for i, j in zip(smax_prob, otherinfo_prob)]
+    return [(i+ wt*j)/(1+wt) for i, j in zip(smax_prob, otherinfo_prob)]
 
 
 wt=2
