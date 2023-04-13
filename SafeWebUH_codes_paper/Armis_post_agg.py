@@ -26,11 +26,14 @@ from imblearn.under_sampling import RandomUnderSampler
 from transformers import AutoTokenizer, AutoModel
 
 
-
-
 start = time.time()
 
+# Data Processing
+train = pd.read_json(path + "data_practicephase_cleardev/data_practicephase_cleardev/ArMIS_dataset/ArMIS_train.json", orient='index')
+dev = pd.read_json(path + "data_practicephase_cleardev/data_practicephase_cleardev/ArMIS_dataset/ArMIS_dev.json", orient='index')
+test = pd.read_json(path + "data_post-competition/data_post-competition/ArMIS_dataset/ArMIS_test.json", orient='index')
 
+#tokenization
 def tokenization_for_BERT(df, path="/path/to/data/Armis/Data/", filename="put_the_filename_here", saveit="No"):
 
 
