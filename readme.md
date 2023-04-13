@@ -1,9 +1,8 @@
 **This repository contains the code for SemEval 23 Task 11 Learning with Disagreement**
 
+The code in this repo is used for the paper titled *SafeWebUH at SemEval-2023 Task 11: Learning Annotator Disagreement in Derogatory Text: Comparison of Direct Training vs Aggregation* 
 
-For codes submitted to the SemEval 2023 shared task (final submission), please check out the codes in *final_submitted_codes* folder
-
-We further made some experiments. The codes can be found in the *all_code_dumped* folder
+Please check out the folder called **SafeWebUH_codes_paper**.
 
 
 ## How to run the codes:
