@@ -495,6 +495,29 @@ def convert_to_tsystem(x):
 def convert_to_explicitness(x):
     return find_avg([int(i) for i in x["other_annotations"]["explicit"].split(',')])
 
+def compute_reg_score(soft, hard, probs, Tsystem, Explicit, wt, save_result=False, produce_result=True):
+    
+    if args.use_metadata=="yes":
+        other_score = np.array(Tsystem)*reg.coef_[0] + np.array(Explicit)*reg.coef_[1] - reg.intercept_
+        target_soft = np.clip((np.array(probs) + other_score*wt)/2, 0, 1)
+    else:
+        target_soft = np.array(probs)
+
+   
+    prediction = [1 if p>=.5 else 0 for p in target_soft]
+    record_results = pd.DataFrame()
+    if save_result:
+        
+        record_results["p_disc"] = prediction
+        record_results["probs_0"] = 1-target_soft
+        record_results["probs_1"] = target_soft 
+        record_results.to_csv(args.log_dir + "ConvAbuse_results.tsv", sep='\t', header=False, index=False)
+    if produce_result:
+        ce = cross_entropy(soft, target_soft)
+        f1_micro = f1_score(hard, prediction, average = "micro")
+
+        print("ce is {}, and f1 is {}".format(ce, f1_micro))
+    return record_results
 
 def compute_aggregated_score(prediction_df, sys_wt, exp_wt):
     Target = prediction_df["target"].tolist()
@@ -534,21 +557,41 @@ def compute_aggregated_score(prediction_df, sys_wt, exp_wt):
     record_results.to_csv(args.log_dir + "convabuse_test.tsv", sep='\t', header=False, index=False)
     return f1, ce
    
+y = list(train.soft_label.apply(lambda x:x['1']))
+X_other = []
+for a, o in zip(train.Tsystem.tolist(), train.Explicit.tolist()):
+    X_other.append([a,o])
+reg = LinearRegression().fit(X_other, y)
 
+def compute_reg_score(soft, hard, probs, Tsystem, Explicit, wt, save_result=False, produce_result=True):
+    
+    if use_metadata=="yes":
+        other_score = np.array(Tsystem)*reg.coef_[0] + np.array(Explicit)*reg.coef_[1] - reg.intercept_
+        target_soft = np.clip((np.array(probs) + other_score*wt)/2, 0, 1)
+    else:
+        target_soft = np.array(probs)
+
+   
+    prediction = [1 if p>=.5 else 0 for p in target_soft]
+    record_results = pd.DataFrame()
+    if save_result:
+        
+        record_results["p_disc"] = prediction
+        record_results["probs_0"] = 1-target_soft
+        record_results["probs_1"] = target_soft 
+        record_results.to_csv(args.log_dir + "HS-Brexit_results.tsv", sep='\t', header=False, index=False)
+    if produce_result:
+        ce = cross_entropy(soft, target_soft)
+        f1_micro = f1_score(hard, prediction, average = "micro")
+
+        print("ce is {}, and f1 is {}".format(ce, f1_micro))
+    return record_results
 
 if args.use_metadata=="yes":
     test = pd.read_json(args.data_dir + "data_post-competition/data_post-competition/ConvAbuse_dataset/ConvAbuse_test.json", orient='index')
-
-
     test["Tsystem"] = test.other_info.apply(lambda x:convert_to_tsystem(x))
     test["Explicit"] = test.other_info.apply(lambda x:convert_to_explicitness(x))
     test["user_text_only"] = test.text.apply(lambda x:convert_to_user_texts(x))
     probs = pd.read_pickle(args.log_dir + "temp/probs.pkl")
-    prediction_df = pd.DataFrame()
-    prediction_df["probs"] = probs.probs.tolist()
-    prediction_df["target"] = probs.soft_lab.tolist()
-    prediction_df["Tsystem"] = test.Tsystem.tolist()
-    prediction_df["Explicit"] = test.Explicit.tolist()
-    # The sys_wt and exp_wt values are obtained by cross-validation
-    f1, ce = compute_aggregated_score(prediction_df, sys_wt=3.157, exp_wt=0.526)
+    df = compute_reg_score( probs.soft_lab.tolist(), test.hard_label.values, probs["probs"].values, test.Tsystem.values, test.Explicit.values, 1)
 
