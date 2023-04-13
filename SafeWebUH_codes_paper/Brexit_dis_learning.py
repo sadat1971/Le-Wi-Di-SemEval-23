@@ -418,9 +418,15 @@ with open(args.log_dir+ "/" + "BERT_dis_learning_results.txt", 'a') as r:
 # label based on the aggressive and offensive ratings. Then just create an weighted 
 # average. We found the right weight simply by results observed in the dev set
 
+# First, train on the train set only (and not on the dev set. Forget about test set at this point)
+# Now, run the linear regression model on the train set to find the  linear regression weights for offensive and aggressive
+# Use the dev set to find best wt
+# Next, train the BERT model on full train + dev set.
+# Now, use the learned linear regression weights to utilize the metadata on test set
 
-test =pd.read_pickle(args.path + "Brexit_v2/Data/Brexit_test.pkl")
-result =pd.read_pickle(args.path + "Brexit_v2/Result/temp/testresult" + ".pkl")
+
+dev =pd.read_pickle(args.path + "Brexit_v2/Data/Brexit_dev.pkl")
+dev =pd.read_pickle(args.path + "Brexit_v2/Result/temp/devresult" + ".pkl")
 
 
 soft = list(train.soft_label.apply(lambda x:x['1']))
@@ -460,8 +466,8 @@ def compute_reg_score(soft, hard, probs, agg, off, wt, save_result=True, produce
     return record_results
 
 
-soft = list(test.soft_label.apply(lambda x:x['1']))
-hard = test.hard_label.tolist()
+soft = list(dev.soft_label.apply(lambda x:x['1']))
+hard = dev.hard_label.tolist()
 probs= result.probs.tolist()
 agg = [sum(a)/len(a) for a in test.Aggressive.tolist()]
 off = [sum(a)/len(a) for a in test.Offensive.tolist()]
