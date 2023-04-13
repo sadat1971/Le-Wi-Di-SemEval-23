@@ -32,7 +32,15 @@ with metadata: ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/ConvAbuse_d
 
 4. For MD-Agreement disagreement learning (dis-learning) (No metadata)
 
-```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/MFD_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5```
+```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/MD_dis_learning.py --batch_size 8 --dropout 0.1 --epochs 4 --hidden_size 32 --lr 5e-5```
+
+5. For ArMIS disagreement learning (dis-learning) (No metadata)
+
+```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Armis_dis_learning.py --batch_size 8 --dropout 0 --epochs 7 --hidden_size 32 --lr 5e-5```
+
+6. For ArMIS post-aggregation learning (Post-Agg) (No metadata)
+
+witho ```python3 /Le-wi-di-semeval-23/SafeWebUH_codes_paper/Armis_post_agg.py --batch_size 8 --dropout 0.1 --hidden_size 32 --lr 5e-5``
 
 
 **Reference**
