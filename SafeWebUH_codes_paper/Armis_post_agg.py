@@ -49,20 +49,6 @@ def tokenization_for_BERT(df, path="/path/to/data/Armis/Data/", filename="put_th
 
     return df
 
-
-
-
-
-
-
-
-
-
-
-
-
-
- 
 class BertClassifier(nn.Module):
     """Bert Model for Classification Tasks.
     """
@@ -74,12 +60,6 @@ class BertClassifier(nn.Module):
         D_in, H, D_out = 1024, hidden_size, 2  
          
         self.bert = AutoModel.from_pretrained("asafaya/bert-large-arabic")
-
-
-         
-         
-
-
         self.fc1 = nn.Linear(D_in, H)
         self.fc2 = nn.Linear(H, D_out)
         self.dropout = nn.Dropout(p=dropout)
@@ -100,8 +80,6 @@ class BertClassifier(nn.Module):
         bert_cls_outputs = self.bert(input_ids=input_ids,
                             attention_mask=attention_mask)[0][:, 0, :]
        
-
-
          
         out1 = self.fc1(bert_cls_outputs)
         out1 = self.relu(out1)
@@ -142,8 +120,6 @@ def initialize_model(epochs, train_dataloader, device, H, D_in=1024, dropout=0.2
 
      
     total_steps = len(train_dataloader) * epochs
-
-
      
     scheduler = get_linear_schedule_with_warmup(optimizer,
                                                 num_warmup_steps=0,  
@@ -171,10 +147,7 @@ def set_seed(seed_value=42):
     torch.cuda.manual_seed_all(seed_value)
 
 
-
-
 def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, device, optimizer, scheduler, class_weights):
-
 
     loss_fn = nn.CrossEntropyLoss(weight=class_weights)
      
@@ -187,24 +160,17 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
     best_loss = np.inf
     for epoch_i in range(epochs):
          
-         
-         
-         
+      
         print(f"{'Epoch':^7} | {'Batch':^7} | {'Train Loss':^12} | {'Val Loss':^10} | {'Val Acc':^9} | {'Elapsed':^9}")
         print("-"*70)
 
 
          
         t0_epoch, t0_batch = time.time(), time.time()
-
-
-         
+     
         total_loss, batch_loss, batch_counts = 0, 0, 0
-
-
-         
+        
         model.train()
-
 
          
         for step, batch in enumerate((train_dataloader)):
@@ -212,16 +178,10 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
              
             b_input_ids, b_attn_mask, b_labels, soft = tuple(t.to(device) for t in batch)
 
-
-             
             model.zero_grad()
-
-
              
             logits = model(b_input_ids, b_attn_mask)
-
-
-             
+         
             loss = loss_fn(logits, b_labels)
             batch_loss += loss.item()
             total_loss += loss.item()
@@ -259,8 +219,7 @@ def train_model(model, train_dataloader,val_dataloader, epochs, evaluation, devi
 
 
         print("-"*70)
-         
-         
+                 
          
         if evaluation == True:
              
@@ -418,11 +377,6 @@ args = parser.parse_args()
 
 
 
-
-
-
-
-
 device = args.device
 # first, we'll see if we have CUDA available
 if torch.cuda.is_available():      
@@ -529,8 +483,6 @@ def compute_aggregated_performance(preds, probs, soft_lab, hard_lab):
     f1_bin = f1_score(hard_lab, all_aggr_preds, average = "binary")
     return pred_wice_ce, prob_wice_ce, f1_micro, f1_bin
    
-
-
 
 
 probs_pred = pd.DataFrame()
